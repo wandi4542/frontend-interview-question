@@ -1,0 +1,70 @@
+﻿@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    font-family: "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  }
+
+  body {
+    @apply bg-slate-50 text-slate-800 antialiased;
+  }
+
+  code {
+    @apply rounded-md bg-slate-100 px-1.5 py-0.5 font-mono text-[0.92em] font-semibold text-slate-600;
+  }
+}
+
+@layer components {
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: #f1f5f9;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 999px;
+  }
+
+  .accordion-content {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.3s ease-in-out;
+  }
+
+  .accordion-content.is-open {
+    grid-template-rows: 1fr;
+  }
+
+  .accordion-inner {
+    overflow: hidden;
+  }
+
+  .answer-content {
+    @apply space-y-2 leading-8 text-slate-600;
+  }
+
+  .answer-content strong {
+    @apply font-bold text-slate-800;
+  }
+
+  .answer-content br + br {
+    display: block;
+    content: '';
+    margin-top: 0.45rem;
+  }
+}
