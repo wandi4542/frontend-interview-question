@@ -9,4 +9,5 @@ export default defineConfig({
   preview: {
     host: '0.0.0.0',
   },
+  base: '/frontend-interview-question/',
 });
