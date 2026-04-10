@@ -7,6 +7,7 @@ const props = defineProps<{
   expandedQuestionIds: string[];
   viewMode: QuestionViewMode;
   hasSearchQuery: boolean;
+  showCategoryBadge?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -25,6 +26,9 @@ const emptyDescription = computed(() => {
 
   return '当前没有可展示的题目。';
 });
+
+// 允许外层在非搜索模式下继续显示分类徽标，便于场景详情页复用。
+const shouldShowCategoryBadge = computed(() => props.showCategoryBadge ?? props.viewMode !== 'category');
 
 // 不同视图模式使用统一的主题色映射，减少模板里的条件分支。
 const accentClasses = computed(() => {
@@ -78,7 +82,7 @@ function isExpanded(questionId: string) {
       >
         <div class="min-w-0 flex-1 pr-4">
           <span
-            v-if="viewMode !== 'category'"
+            v-if="shouldShowCategoryBadge"
             class="mb-2 inline-flex rounded-md px-2 py-1 text-xs"
             :class="accentClasses.badge"
           >
@@ -115,4 +119,3 @@ function isExpanded(questionId: string) {
     </article>
   </div>
 </template>
-
