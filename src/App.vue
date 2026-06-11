@@ -33,6 +33,7 @@ const {
 const activeTopTab = ref<TopTab>('questions');
 const activeScenarioId = ref<string | null>(null);
 const scenarioExpandedQuestionIds = ref<string[]>([]);
+const isMobileDirectoryOpen = ref(false);
 
 // 控制右下角返回顶部按钮的显示时机。
 const showBackToTop = ref(false);
@@ -174,13 +175,34 @@ const headingAccentClass = computed(() => {
   return 'border-emerald-500';
 });
 
+const mobileDirectoryCurrentLabel = computed(() => {
+  if (viewMode.value === 'search') {
+    return '搜索结果';
+  }
+
+  if (viewMode.value === 'random') {
+    return '随机抽题';
+  }
+
+  return activeCategory.value.name;
+});
+
 function setScenarioExpandedToFirst(query: string) {
   const [firstQuestion] = getQuestionsByQuery(query);
   scenarioExpandedQuestionIds.value = firstQuestion ? [firstQuestion.id] : [];
 }
 
+function openMobileDirectory() {
+  isMobileDirectoryOpen.value = true;
+}
+
+function closeMobileDirectory() {
+  isMobileDirectoryOpen.value = false;
+}
+
 function handleTopTabSwitch(tab: TopTab) {
   activeTopTab.value = tab;
+  closeMobileDirectory();
 
   if (tab !== 'scenarios') {
     activeScenarioId.value = null;
@@ -221,10 +243,13 @@ function handleScenarioQuestionToggle(questionId: string) {
 
 function handleCategorySelect(categoryId: string) {
   setCategory(categoryId);
+  closeMobileDirectory();
 }
 
 // 输入框聚焦时自动切到搜索视图，避免用户手动切换。
 function handleSearchFocus() {
+  closeMobileDirectory();
+
   if (viewMode.value !== 'search') {
     setViewMode('search');
   }
@@ -233,6 +258,8 @@ function handleSearchFocus() {
 function handleSearchInput(event: Event) {
   const target = event.target as HTMLInputElement;
 
+  closeMobileDirectory();
+
   if (viewMode.value !== 'search') {
     setViewMode('search');
   }
@@ -240,8 +267,19 @@ function handleSearchInput(event: Event) {
   searchQuery.value = target.value;
 }
 
+function handleSearchBlur() {
+  if (searchQuery.value.trim()) {
+    return;
+  }
+
+  if (viewMode.value === 'search') {
+    setViewMode('category');
+  }
+}
+
 // 点击随机抽题按钮时切换视图，具体抽题逻辑由 composable 统一处理。
 function handleRandomClick() {
+  closeMobileDirectory();
   setViewMode('random');
 }
 
@@ -291,6 +329,7 @@ onUnmounted(() => {
               class="w-36 rounded-full border border-transparent bg-slate-100 py-2 pl-10 pr-4 text-sm text-slate-700 shadow-sm outline-none transition-all duration-300 placeholder:text-slate-400 focus:w-48 focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-100 md:w-44 md:max-w-full md:focus:w-52 lg:w-56 lg:focus:w-72 xl:w-60 xl:focus:w-80"
               @focus="handleSearchFocus"
               @input="handleSearchInput"
+              @blur="handleSearchBlur"
             />
             <svg class="pointer-events-none absolute left-3 top-2.5 h-5 w-5 text-slate-400 transition-colors group-focus-within:text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -326,19 +365,105 @@ onUnmounted(() => {
     <div class="flex min-h-screen flex-col md:flex-row" :class="contentPaddingClass">
       <nav
         v-if="isQuestionsTab"
-        class="scrollbar-hide w-full overflow-x-auto whitespace-nowrap border-b border-slate-100 bg-white px-2 py-2 shadow-sm md:hidden"
+        class="border-b border-slate-100 bg-white px-3 py-3 shadow-sm md:hidden"
       >
         <button
-          v-for="category in categories"
-          :key="category.id"
           type="button"
-          class="mx-1 rounded-full px-4 py-1.5 text-sm font-medium transition-colors duration-200"
-          :class="viewMode === 'category' && activeCategoryId === category.id ? 'bg-emerald-500 text-white shadow' : 'bg-slate-100 text-slate-600'"
-          @click="handleCategorySelect(category.id)"
+          class="flex w-full items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-left transition-colors duration-200 active:bg-slate-100"
+          @click="openMobileDirectory"
         >
-          {{ category.name }}
+          <div class="min-w-0">
+            <p class="text-sm font-semibold text-slate-800">目录</p>
+            <p class="mt-1 text-xs text-slate-500">点击打开目录，快速切换当前区域的题库分类</p>
+          </div>
+          <div class="ml-4 flex min-w-0 items-center gap-2 text-right">
+            <span
+              class="max-w-[10rem] truncate rounded-full px-3 py-1 text-xs font-medium"
+              :class="viewMode === 'random'
+                ? 'bg-orange-100 text-orange-600'
+                : viewMode === 'search'
+                  ? 'bg-indigo-100 text-indigo-600'
+                  : 'bg-emerald-100 text-emerald-600'"
+            >
+              {{ mobileDirectoryCurrentLabel }}
+            </span>
+            <svg class="h-5 w-5 shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          </div>
         </button>
       </nav>
+
+      <Transition
+        enter-active-class="transition-opacity duration-200"
+        enter-from-class="opacity-0"
+        leave-active-class="transition-opacity duration-200"
+        leave-to-class="opacity-0"
+      >
+        <div
+          v-if="isQuestionsTab && isMobileDirectoryOpen"
+          class="fixed inset-0 z-40 md:hidden"
+          aria-modal="true"
+          role="dialog"
+        >
+          <button
+            type="button"
+            class="absolute inset-0 bg-slate-900/45"
+            aria-label="关闭目录弹窗"
+            @click="closeMobileDirectory"
+          />
+
+          <div class="absolute inset-x-0 bottom-0 rounded-t-[28px] bg-white px-5 pb-8 pt-5 shadow-2xl">
+            <div class="mx-auto mb-4 h-1.5 w-12 rounded-full bg-slate-200" />
+
+            <div class="mb-4 flex items-start justify-between gap-4">
+              <div>
+                <h3 class="text-lg font-bold text-slate-900">目录</h3>
+                <p class="mt-1 text-sm text-slate-500">选择一个分类，直接跳到对应题库内容。</p>
+              </div>
+
+              <button
+                type="button"
+                class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition-colors hover:bg-slate-200"
+                aria-label="关闭目录"
+                @click="closeMobileDirectory"
+              >
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div class="max-h-[65vh] space-y-2 overflow-y-auto pb-2">
+              <button
+                v-for="category in categories"
+                :key="category.id"
+                type="button"
+                class="flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left transition-all duration-200"
+                :class="viewMode === 'category' && activeCategoryId === category.id
+                  ? 'border-emerald-200 bg-emerald-50 text-emerald-700 shadow-sm'
+                  : 'border-slate-200 bg-white text-slate-700'"
+                @click="handleCategorySelect(category.id)"
+              >
+                <div class="min-w-0">
+                  <p class="truncate text-sm font-semibold">{{ category.name }}</p>
+                  <p class="mt-1 text-xs text-slate-500">{{ category.questions.length }} 道题</p>
+                </div>
+
+                <svg
+                  v-if="viewMode === 'category' && activeCategoryId === category.id"
+                  class="ml-3 h-5 w-5 shrink-0 text-emerald-500"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </Transition>
 
       <SidebarNav
         v-if="isQuestionsTab"

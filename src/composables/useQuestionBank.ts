@@ -1,6 +1,8 @@
-﻿import { computed, ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { questionBank } from '../data/question-bank';
 import type { QuestionCategory, QuestionRecord, QuestionViewMode } from '../types/question';
+
+const RANDOM_BATCH_SIZE = 10;
 
 // Fisher-Yates 洗牌算法，保证随机题目分布更均匀。
 function shuffleQuestions(questions: QuestionRecord[]) {
@@ -37,6 +39,7 @@ export function useQuestionBank() {
   const activeCategoryId = ref(categories.value[0]?.id ?? '');
   const searchQuery = ref('');
   const randomQuestions = ref<QuestionRecord[]>([]);
+  const randomPool = ref<QuestionRecord[]>([]);
   const expandedQuestionIds = ref<string[]>([]);
 
   // 扁平化所有分类，方便全局搜索和随机抽题。
@@ -127,9 +130,58 @@ export function useQuestionBank() {
     expandedQuestionIds.value = [...expandedQuestionIds.value, questionId];
   }
 
+  function refillRandomPool() {
+    randomPool.value = shuffleQuestions(allQuestions.value);
+  }
+
+  // 维护一个按轮次消费的随机池，当前池抽空后再创建下一轮。
+  function getNextRandomBatch(batchSize: number) {
+    const nextQuestions: QuestionRecord[] = [];
+    const selectedQuestionIds = new Set<string>();
+    const maxUniqueCount = new Set(allQuestions.value.map((question) => question.id)).size;
+    const targetSize = Math.min(batchSize, maxUniqueCount);
+
+    while (nextQuestions.length < targetSize) {
+      if (randomPool.value.length === 0) {
+        refillRandomPool();
+      }
+
+      if (randomPool.value.length === 0) {
+        break;
+      }
+
+      const remainingPool: QuestionRecord[] = [];
+      let didPickQuestion = false;
+
+      for (const question of randomPool.value) {
+        if (nextQuestions.length >= targetSize) {
+          remainingPool.push(question);
+          continue;
+        }
+
+        if (selectedQuestionIds.has(question.id)) {
+          remainingPool.push(question);
+          continue;
+        }
+
+        nextQuestions.push(question);
+        selectedQuestionIds.add(question.id);
+        didPickQuestion = true;
+      }
+
+      randomPool.value = remainingPool;
+
+      if (!didPickQuestion) {
+        break;
+      }
+    }
+
+    return nextQuestions;
+  }
+
   // 每次随机抽取 10 道题，并默认展开第一道。
   function refreshRandomQuestions() {
-    randomQuestions.value = shuffleQuestions(allQuestions.value).slice(0, 10);
+    randomQuestions.value = getNextRandomBatch(RANDOM_BATCH_SIZE);
     expandedQuestionIds.value = randomQuestions.value[0] ? [randomQuestions.value[0].id] : [];
   }
 

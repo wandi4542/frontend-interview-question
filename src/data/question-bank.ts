@@ -222,6 +222,12 @@ export const questionBank: QuestionCategory[] = [
         "answerHtml": "<strong>Vue 2 中：</strong><code>v-for</code> 优先级<strong>高于</strong> <code>v-if</code>。如果写在同个标签上，每次渲染都会先循环出所有节点再去判断是否隐藏，极度浪费性能。<br><strong>Vue 3 中：</strong><code>v-if</code> 优先级<strong>高于</strong> <code>v-for</code>。连用时，<code>v-if</code> 拿不到 <code>v-for</code> 里的变量，会直接报错。<br><span class=\"text-amber-600 text-sm\">⚠️ 经验之谈：永远不要把它们写在同一个标签上。正确做法是用 <code>&lt;template v-for&gt;</code> 包裹，或者用 computed 把数据提前过滤好。</span>"
       },
       {
+        "id": "advanced-02b",
+        "question": "7.2.1 v-for为什么需要key？",
+        "answerHtml": "<code>key</code> 的作用是给每一项一个<strong>稳定且唯一的身份标识</strong>，让 Vue 在 diff 更新时能准确判断“谁是新增、谁是删除、谁是移动、谁是复用”。<br><br>如果 <code>v-for</code> 不写 <code>key</code>，或者写成不稳定的值，Vue 往往会采用就地复用策略，表面上看性能可能还行，但一旦列表发生<strong>排序、插入、删除</strong>，就容易出现状态错乱，比如输入框内容串位、组件内部状态错位、动画异常等。<br><br><strong>实践建议：</strong>优先使用后端返回的 <code>id</code> 这类稳定唯一值作为 <code>key</code>，尽量不要用数组下标；只有在列表完全静态、不会增删改和重排时，才勉强可以考虑用 index。",
+        "keywords": ["v-for", "key", "列表渲染", "diff"],
+      },
+      {
         "id": "advanced-03",
         "question": "7.3 ref是什么？",
         "answerHtml": "<strong>在 Vue 2 中：</strong>主要是一个打在 DOM 或组件标签上的“标记”，用于在逻辑里通过 <code>this.$refs</code> 获取原生 DOM 节点或子组件的实例。<br><strong>在 Vue 3 中：</strong>除了保留获取 DOM 的功能，它摇身一变成为了最核心的响应式 API（Composition API），用于将基础类型（甚至复杂类型）包装为响应式对象，通过 <code>.value</code> 读写数据。"
