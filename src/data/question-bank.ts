@@ -1,6 +1,7 @@
 import type { QuestionCategory } from '../types/question';
+import { createSupplementalQuestionBank } from './supplemental-question-bank';
 
-export const questionBank: QuestionCategory[] = [
+const coreQuestionBank: QuestionCategory[] = [
   {
     "id": "lifecycle",
     "name": "1. Vue 2 生命周期",
@@ -1069,4 +1070,9 @@ export const questionBank: QuestionCategory[] = [
       }
     ]
   }
+];
+
+export const questionBank: QuestionCategory[] = [
+  ...coreQuestionBank,
+  ...createSupplementalQuestionBank(coreQuestionBank),
 ];
